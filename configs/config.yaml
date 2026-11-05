@@ -1,14 +1,17 @@
 seed: 42
 device: auto
 paths:
-  raw_images: data/raw/images
-  raw_annotations: data/raw/annotations
+  raw_root: data/raw
   processed: data/processed
   checkpoints: models
   plots: results/plots
 data:
-  classes: [player, ball]
-  split: {train: 0.70, validation: 0.15, test: 0.15}
+  class_aliases:
+    player: player
+    football-player: player
+    football-players: player
+    ball: ball
+    football: ball
   num_workers: 0
 train:
   epochs: 5
