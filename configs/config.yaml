@@ -1,11 +1,11 @@
 seed: 42
 device: auto
 paths:
-  raw_root: data/raw
-  processed: data/processed
   checkpoints: models
   plots: results/plots
+  results: results
 data:
+  dataset_dir: data/raw/Football-Player-Detection.v8-resized1280_tile2x2_aug3x.coco
   class_aliases:
     player: player
     football-player: player
@@ -14,9 +14,16 @@ data:
     football: ball
   num_workers: 0
 train:
-  epochs: 5
+  epochs: 3
   batch_size: 2
-  lr: 0.0005
-  image_size: 800
+  lr: 0.005
+  momentum: 0.9
+  weight_decay: 0.0005
+  lr_step_size: 2
+  lr_gamma: 0.1
+  min_size: 640
+  max_size: 1066
+  max_train_images: 1500
+  max_val_images: 300
 inference:
   confidence_threshold: 0.5
