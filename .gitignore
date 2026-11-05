@@ -12,3 +12,4 @@ models/*
 !models/.gitkeep
 results/plots/*
 !results/plots/.gitkeep
+results/samples/
