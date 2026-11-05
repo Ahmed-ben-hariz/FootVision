@@ -1,0 +1,13 @@
+torch
+torchvision
+torchmetrics
+pycocotools
+opencv-python
+numpy
+pandas
+scikit-learn
+matplotlib
+streamlit
+pillow
+pyyaml
+pytest

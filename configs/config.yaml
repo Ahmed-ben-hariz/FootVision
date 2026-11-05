@@ -1,0 +1,19 @@
+seed: 42
+device: auto
+paths:
+  raw_images: data/raw/images
+  raw_annotations: data/raw/annotations
+  processed: data/processed
+  checkpoints: models
+  plots: results/plots
+data:
+  classes: [player, ball]
+  split: {train: 0.70, validation: 0.15, test: 0.15}
+  num_workers: 0
+train:
+  epochs: 5
+  batch_size: 2
+  lr: 0.0005
+  image_size: 800
+inference:
+  confidence_threshold: 0.5
