@@ -119,10 +119,16 @@ def main() -> None:
     ap.add_argument("--epochs", type=int)
     ap.add_argument("--max-train", type=int)
     ap.add_argument("--max-val", type=int)
+    ap.add_argument("--min-size", type=int)
+    ap.add_argument("--max-size", type=int)
+    ap.add_argument("--run-name", default="run")
     args = ap.parse_args()
 
     cfg = load_config()
     tc = cfg["train"]
+    if args.min_size:
+        tc["min_size"] = args.min_size
+        tc["max_size"] = args.max_size or max(args.min_size, tc["max_size"])
     epochs = args.epochs or tc["epochs"]
     seed = cfg["seed"]
     seed_everything(seed)
@@ -170,15 +176,16 @@ def main() -> None:
                 "n_val_images": len(val_ds), "dataset_dir": cfg["data"]["dataset_dir"],
                 "trained_at": datetime.now(timezone.utc).isoformat(),
                 "class_names": CLASS_NAMES}
-        save_checkpoint(ckpt_dir / "last.pt", model, **meta)
+        save_checkpoint(ckpt_dir / f"{args.run_name}_last.pt", model, **meta)
         if val["map_50"] > best:
             best = val["map_50"]
-            save_checkpoint(ckpt_dir / "best.pt", model, **meta)
-        (results_dir / "history.json").write_text(json.dumps(history, indent=2))
-        save_plots(history, ROOT / cfg["paths"]["plots"])
+            save_checkpoint(ckpt_dir / f"{args.run_name}_best.pt", model, **meta)
+        (results_dir / f"history_{args.run_name}.json").write_text(json.dumps(history, indent=2))
+        save_plots(history, ROOT / cfg["paths"]["plots"] / args.run_name)
         print(f"Epoch {epoch + 1}/{epochs}: train_loss {train_loss:.4f} | "
               f"mAP@0.5 {val['map_50']:.3f} | mAP {val['map']:.3f} | "
-              f"mAR@100 {val['mar_100']:.3f} | per-class mAP {val['map_per_class']}")
+              f"mAR@100 {val['mar_100']:.3f} | per-class mAP {val['map_per_class']} | "
+              f"{history[-1]['seconds'] / 60:.1f} min")
 
 
 if __name__ == "__main__":
