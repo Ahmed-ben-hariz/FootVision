@@ -137,7 +137,40 @@ def draw_detections(image: Image.Image, detections: list[Detection]) -> Image.Im
     return Image.fromarray(cv2.cvtColor(arr, cv2.COLOR_BGR2RGB))
 
 
+def suppress_duplicates(dets: list[Detection], iomin_thr: float) -> list[Detection]:
+    """Drop a box if most of its area lies inside a higher-scoring box of the same class."""
+    kept: list[Detection] = []
+    for d in sorted(dets, key=lambda d: -d.score):
+        x1, y1, x2, y2 = d.box
+        area = max(0.0, x2 - x1) * max(0.0, y2 - y1)
+        duplicate = False
+        for k in kept:
+            if k.label != d.label:
+                continue
+            kx1, ky1, kx2, ky2 = k.box
+            iw, ih = min(x2, kx2) - max(x1, kx1), min(y2, ky2) - max(y1, ky1)
+            if iw <= 0 or ih <= 0:
+                continue
+            smaller = min(area, (kx2 - kx1) * (ky2 - ky1))
+            if iw * ih / max(smaller, 1e-9) >= iomin_thr:
+                duplicate = True
+                break
+        if not duplicate:
+            kept.append(d)
+    return kept
+
+
 def predict_image(model, image: Image.Image, device, cfg_inf: dict,
+                  mode: str | None = None, threshold: float | None = None) -> PredictionResult:
+    """Detect, then remove duplicate boxes if cfg_inf has dedup_iomin."""
+    result = _predict_raw(model, image, device, cfg_inf, mode, threshold)
+    iomin = cfg_inf.get("dedup_iomin")
+    if iomin:
+        result.detections = suppress_duplicates(result.detections, iomin)
+    return result
+
+
+def _predict_raw(model, image: Image.Image, device, cfg_inf: dict,
                   mode: str | None = None, threshold: float | None = None) -> PredictionResult:
     """Run detection with settings from config (overridable)."""
     mode = mode or cfg_inf["mode"]

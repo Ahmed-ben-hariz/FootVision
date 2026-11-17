@@ -60,3 +60,15 @@ def test_missing_image_error(tmp_path):
 def test_unknown_mode(model, image):
     with pytest.raises(ValueError):
         predict_image(model, image, CPU, INF, mode="bogus")
+
+
+def test_suppress_duplicates():
+    from src.predict import Detection, suppress_duplicates
+    big = Detection((0, 0, 100, 200), 1, 0.9)
+    inside = Detection((10, 20, 60, 150), 1, 0.6)            # mostly inside big: duplicate
+    neighbour = Detection((120, 0, 220, 200), 1, 0.8)        # separate player: keep
+    other_class = Detection((10, 20, 60, 150), 2, 0.7)       # different class: keep
+    kept = suppress_duplicates([big, inside, neighbour, other_class], 0.7)
+    assert inside not in kept
+    assert big in kept and neighbour in kept and other_class in kept
+    assert suppress_duplicates([], 0.7) == []

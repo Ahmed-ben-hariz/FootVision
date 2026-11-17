@@ -28,8 +28,12 @@ train:
 inference:
   checkpoint: models/exp2_960_best.pt
   confidence_threshold: 0.5
-  mode: single          # single | tiled
+  mode: tiled           # single | tiled
   square_size: 1280
   tile_grid: 2
   tile_overlap: 0.1
   nms_iou: 0.5
+  dedup_iomin: 0.7     # drop a box if >=70% of it lies inside a higher-scoring box
+team:
+  max_distance: 0.35    # farther than this from both team colours -> Unknown
+  min_separation: 0.2    # team colours closer than this -> cannot separate teams
