@@ -55,3 +55,15 @@ def test_checkpoint_roundtrip(model, tmp_path):
 def test_missing_checkpoint_gives_clear_error(tmp_path):
     with pytest.raises(FileNotFoundError, match="Checkpoint not found"):
         load_checkpoint(tmp_path / "nope.pt")
+
+
+def test_custom_anchors_roundtrip(tmp_path):
+    m = build_model(pretrained=False, min_size=320, max_size=512,
+                    anchor_sizes=(16, 32, 64, 128, 256))
+    assert m.rpn.anchor_generator.sizes[0] == (16, 32, 64, 128, 256)
+    default = build_model(pretrained=False, min_size=320, max_size=512)
+    assert m.rpn.head.cls_logits.weight.shape == default.rpn.head.cls_logits.weight.shape
+    path = tmp_path / "anch.pt"
+    save_checkpoint(path, m, anchor_sizes=(16, 32, 64, 128, 256))
+    loaded, _ = load_checkpoint(path, "cpu", min_size=320, max_size=512)
+    assert loaded.rpn.anchor_generator.sizes[0] == (16, 32, 64, 128, 256)

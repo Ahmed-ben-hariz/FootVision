@@ -122,6 +122,7 @@ def main() -> None:
     ap.add_argument("--min-size", type=int)
     ap.add_argument("--max-size", type=int)
     ap.add_argument("--run-name", default="run")
+    ap.add_argument("--anchors", help="comma-separated anchor sizes, e.g. 16,32,64,128,256")
     args = ap.parse_args()
 
     cfg = load_config()
@@ -150,7 +151,9 @@ def main() -> None:
                             num_workers=workers, collate_fn=collate_fn)
     print(f"Device: {device} | train images: {len(train_ds)} | val images: {len(val_ds)}")
 
-    model = build_model(pretrained=True, min_size=tc["min_size"], max_size=tc["max_size"])
+    anchor_sizes = tuple(int(x) for x in args.anchors.split(",")) if args.anchors else None
+    model = build_model(pretrained=True, min_size=tc["min_size"], max_size=tc["max_size"],
+                        anchor_sizes=anchor_sizes)
     model.to(device)
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.SGD(params, lr=tc["lr"], momentum=tc["momentum"],
@@ -175,7 +178,7 @@ def main() -> None:
                 "max_size": tc["max_size"], "n_train_images": len(train_ds),
                 "n_val_images": len(val_ds), "dataset_dir": cfg["data"]["dataset_dir"],
                 "trained_at": datetime.now(timezone.utc).isoformat(),
-                "class_names": CLASS_NAMES}
+                "class_names": CLASS_NAMES, "anchor_sizes": anchor_sizes}
         save_checkpoint(ckpt_dir / f"{args.run_name}_last.pt", model, **meta)
         if val["map_50"] > best:
             best = val["map_50"]

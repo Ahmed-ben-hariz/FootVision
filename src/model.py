@@ -13,6 +13,7 @@ from torchvision.models.detection import (
     FasterRCNN_MobileNet_V3_Large_FPN_Weights,
     fasterrcnn_mobilenet_v3_large_fpn,
 )
+from torchvision.models.detection.anchor_utils import AnchorGenerator
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 
 NUM_CLASSES = 3  # background + player + ball
@@ -20,7 +21,8 @@ ARCHITECTURE = "fasterrcnn_mobilenet_v3_large_fpn"
 
 
 def build_model(num_classes: int = NUM_CLASSES, pretrained: bool = True,
-                min_size: int = 800, max_size: int = 1333) -> torch.nn.Module:
+                min_size: int = 800, max_size: int = 1333,
+                anchor_sizes: tuple[int, ...] | None = None) -> torch.nn.Module:
     """Return a detection model ready for fine-tuning.
 
     pretrained=True downloads COCO weights (needs internet the first time).
@@ -30,6 +32,13 @@ def build_model(num_classes: int = NUM_CLASSES, pretrained: bool = True,
     weights = FasterRCNN_MobileNet_V3_Large_FPN_Weights.DEFAULT if pretrained else None
     model = fasterrcnn_mobilenet_v3_large_fpn(
         weights=weights, weights_backbone=None, min_size=min_size, max_size=max_size)
+    if anchor_sizes is not None:
+        # Torchvision's builder hardcodes the anchors, so swap the generator afterwards.
+        # Anchors per location must stay 15 (5 sizes x 3 ratios) so RPN weights still fit.
+        if len(anchor_sizes) != 5:
+            raise ValueError(f"anchor_sizes needs exactly 5 values, got {anchor_sizes}")
+        model.rpn.anchor_generator = AnchorGenerator(
+            sizes=(tuple(anchor_sizes),) * 3, aspect_ratios=((0.5, 1.0, 2.0),) * 3)
     in_features = model.roi_heads.box_predictor.cls_score.in_features
     model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
     return model
@@ -58,7 +67,8 @@ def load_checkpoint(path: str | Path, device: torch.device | str = "cpu",
     if ckpt.get("architecture") != ARCHITECTURE:
         raise ValueError(f"Unexpected architecture in {path}: {ckpt.get('architecture')}")
     model = build_model(ckpt["num_classes"], pretrained=False,
-                        min_size=min_size, max_size=max_size)
+                        min_size=min_size, max_size=max_size,
+                        anchor_sizes=ckpt.get("anchor_sizes"))
     model.load_state_dict(ckpt["model_state"])
     model.to(device).eval()
     meta = {k: v for k, v in ckpt.items() if k != "model_state"}
