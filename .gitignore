@@ -13,3 +13,4 @@ models/*
 results/plots/*
 !results/plots/.gitkeep
 results/samples/
+results/errors/
