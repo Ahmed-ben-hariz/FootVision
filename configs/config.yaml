@@ -26,4 +26,10 @@ train:
   max_train_images: 1500
   max_val_images: 300
 inference:
+  checkpoint: models/exp2_960_best.pt
   confidence_threshold: 0.5
+  mode: single          # single | tiled
+  square_size: 1280
+  tile_grid: 2
+  tile_overlap: 0.1
+  nms_iou: 0.5
