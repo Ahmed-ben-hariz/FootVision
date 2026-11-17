@@ -208,6 +208,14 @@ def main() -> None:
     print(f"Image: {args.image} ({image.size[0]}x{image.size[1]}), mode={mode}, device={device}")
     print(f"Players detected: {result.n_players}")
     print(f"Footballs detected: {result.n_balls}")
+    from src.team_classifier import classify_teams
+    players = [d for d in result.detections if d.label == 1]
+    teams = classify_teams(image, [d.box for d in players], **cfg["team"])
+    c = teams.counts()
+    print(f"Team A: {c['Team A']} | Team B: {c['Team B']} | Unknown: {c['Unknown']}"
+          + (f"  ({teams.note})" if teams.note else ""))
+    if teams.colors:
+        print("Team colors (RGB):", teams.colors)
     print("Confidences:", ", ".join(f"{LABEL_NAMES[d.label]}={d.score:.2f}"
                                       for d in result.detections) or "none")
     print(f"Output image: {out_path}")
